@@ -1,0 +1,147 @@
+CREATE OR REPLACE FUNCTION testfunc(integer) RETURNS integer AS $$
+          ....
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+\i filename.sql
+
+
+
+
+
+
+CREATE OR REPLACE FUNCTION testfunc(integer) RETURNS integer AS $PROC$
+          ....
+$PROC$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE FUNCTION foo() RETURNS integer AS '
+          ....
+' LANGUAGE plpgsql;
+
+
+
+
+
+a_output := ''Blah'';
+SELECT * FROM users WHERE f_name=''foobar'';
+
+
+
+
+a_output := 'Blah';
+SELECT * FROM users WHERE f_name='foobar';
+
+
+
+
+a_output := a_output || '' AND name LIKE ''''foobar'''' AND xyz''
+
+
+
+
+
+a_output := a_output || $$ AND name LIKE 'foobar' AND xyz$$
+
+
+
+
+
+
+a_output := a_output || '' AND name LIKE ''''foobar''''''
+
+
+
+
+
+
+a_output := a_output || $$ AND name LIKE 'foobar'$$
+
+
+
+
+
+a_output := a_output || '' if v_'' ||
+    referrer_keys.kind || '' like ''''''''''
+    || referrer_keys.key_string || ''''''''''
+    then return ''''''  || referrer_keys.referrer_type
+    || ''''''; end if;'';
+    
+    
+    
+    
+    if v_... like ''...'' then return ''...''; end if;
+
+
+
+
+
+a_output := a_output || $$ if v_$$ || referrer_keys.kind || $$ like '$$
+    || referrer_keys.key_string || $$'
+    then return '$$  || referrer_keys.referrer_type
+    || $$'; end if;$$;
+
+
+
+
+
+SET plpgsql.extra_warnings TO 'shadowed_variables';
+
+CREATE FUNCTION foo(f1 int) RETURNS int AS $$
+DECLARE
+f1 int;
+BEGIN
+RETURN f1;
+END;
+$$ LANGUAGE plpgsql;
+WARNING:  variable "f1" shadows a previously defined variable
+LINE 3: f1 int;
+        ^
+CREATE FUNCTION
+
+
+
+
+
+
+SET plpgsql.extra_warnings TO 'strict_multi_assignment';
+
+CREATE OR REPLACE FUNCTION public.foo()
+ RETURNS void
+ LANGUAGE plpgsql
+AS $$
+DECLARE
+  x int;
+  y int;
+BEGIN
+  SELECT 1 INTO x, y;
+  SELECT 1, 2 INTO x, y;
+  SELECT 1, 2, 3 INTO x, y;
+END;
+$$;
+
+SELECT foo();
+WARNING:  number of source and target fields in assignment does not match
+DETAIL:  strict_multi_assignment check of extra_warnings is active.
+HINT:  Make sure the query returns the exact list of columns.
+WARNING:  number of source and target fields in assignment does not match
+DETAIL:  strict_multi_assignment check of extra_warnings is active.
+HINT:  Make sure the query returns the exact list of columns.
+
+ foo
+-----
+
+(1 row)
+
+
+
+
+
+
+

@@ -1,0 +1,28 @@
+IF expression THEN ...
+
+
+
+
+SELECT expression
+
+
+
+
+
+IF x < y THEN ...
+
+
+
+
+
+
+PREPARE statement_name(integer, integer) AS SELECT $1 < $2;
+
+
+
+
+
+IF count(*) > 0 FROM my_table THEN ...
+
+
+

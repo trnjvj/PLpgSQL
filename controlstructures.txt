@@ -1,0 +1,558 @@
+RETURN expression;
+
+
+
+
+-- functions returning a scalar type
+RETURN 1 + 2;
+RETURN scalar_var;
+
+-- functions returning a composite type
+RETURN composite_type_var;
+RETURN (1, 2, 'three'::text);  -- must cast columns to correct types
+
+
+
+
+
+RETURN NEXT expression;
+RETURN QUERY query;
+RETURN QUERY EXECUTE command-string [ USING expression [, ... ] ];
+
+
+
+
+CREATE TABLE foo (fooid INT, foosubid INT, fooname TEXT);
+INSERT INTO foo VALUES (1, 2, 'three');
+INSERT INTO foo VALUES (4, 5, 'six');
+
+CREATE OR REPLACE FUNCTION get_all_foo() RETURNS SETOF foo AS
+$BODY$
+DECLARE
+    r foo%rowtype;
+BEGIN
+    FOR r IN
+        SELECT * FROM foo WHERE fooid > 0
+    LOOP
+        -- can do some processing here
+        RETURN NEXT r; -- return current row of SELECT
+    END LOOP;
+    RETURN;
+END;
+$BODY$
+LANGUAGE plpgsql;
+
+SELECT * FROM get_all_foo();
+
+
+
+
+
+
+CREATE FUNCTION get_available_flightid(date) RETURNS SETOF integer AS
+$BODY$
+BEGIN
+    RETURN QUERY SELECT flightid
+                   FROM flight
+                  WHERE flightdate >= $1
+                    AND flightdate < ($1 + 1);
+
+    -- Since execution is not finished, we can check whether rows were returned
+    -- and raise exception if not.
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No flight at %.', $1;
+    END IF;
+
+    RETURN;
+ END;
+$BODY$
+LANGUAGE plpgsql;
+
+-- Returns available flights or raises exception if there are no
+-- available flights.
+SELECT * FROM get_available_flightid(CURRENT_DATE);
+
+
+
+
+
+
+CREATE PROCEDURE triple(INOUT x int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    x := x * 3;
+END;
+$$;
+
+DO $$
+DECLARE myvar int := 5;
+BEGIN
+  CALL triple(myvar);
+  RAISE NOTICE 'myvar = %', myvar;  -- prints 15
+END;
+$$;
+
+
+
+
+
+
+
+IF boolean-expression THEN
+    statements
+END IF;
+
+
+
+
+
+
+IF v_user_id <> 0 THEN
+    UPDATE users SET email = v_email WHERE user_id = v_user_id;
+END IF;
+
+
+
+
+IF boolean-expression THEN
+    statements
+ELSE
+    statements
+END IF;
+
+
+
+
+IF parentid IS NULL OR parentid = ''
+THEN
+    RETURN fullname;
+ELSE
+    RETURN hp_true_filename(parentid) || '/' || fullname;
+END IF;
+
+
+
+
+IF v_count > 0 THEN
+    INSERT INTO users_count (count) VALUES (v_count);
+    RETURN 't';
+ELSE
+    RETURN 'f';
+END IF;
+
+
+
+
+
+
+IF boolean-expression THEN
+    statements
+[ ELSIF boolean-expression THEN
+    statements
+[ ELSIF boolean-expression THEN
+    statements
+    ...
+]
+]
+[ ELSE
+    statements ]
+END IF;
+
+
+
+
+
+IF number = 0 THEN
+    result := 'zero';
+ELSIF number > 0 THEN
+    result := 'positive';
+ELSIF number < 0 THEN
+    result := 'negative';
+ELSE
+    -- hmm, the only other possibility is that number is null
+    result := 'NULL';
+END IF;
+
+
+
+
+
+IF demo_row.sex = 'm' THEN
+    pretty_sex := 'man';
+ELSE
+    IF demo_row.sex = 'f' THEN
+        pretty_sex := 'woman';
+    END IF;
+END IF;
+
+
+
+
+CASE search-expression
+    WHEN expression [, expression [ ... ]] THEN
+      statements
+  [ WHEN expression [, expression [ ... ]] THEN
+      statements
+    ... ]
+  [ ELSE
+      statements ]
+END CASE;
+
+
+
+
+
+CASE x
+    WHEN 1, 2 THEN
+        msg := 'one or two';
+    ELSE
+        msg := 'other value than one or two';
+END CASE;
+
+
+
+
+CASE
+    WHEN boolean-expression THEN
+      statements
+  [ WHEN boolean-expression THEN
+      statements
+    ... ]
+  [ ELSE
+      statements ]
+END CASE;
+
+
+
+
+CASE
+    WHEN x BETWEEN 0 AND 10 THEN
+        msg := 'value is between zero and ten';
+    WHEN x BETWEEN 11 AND 20 THEN
+        msg := 'value is between eleven and twenty';
+END CASE;
+
+
+
+
+[ <<label>> ]
+LOOP
+    statements
+END LOOP [ label ];
+
+
+
+
+EXIT [ label ] [ WHEN boolean-expression ];
+
+
+
+
+
+LOOP
+    -- some computations
+    IF count > 0 THEN
+        EXIT;  -- exit loop
+    END IF;
+END LOOP;
+
+LOOP
+    -- some computations
+    EXIT WHEN count > 0;  -- same result as previous example
+END LOOP;
+
+<<ablock>>
+BEGIN
+    -- some computations
+    IF stocks > 100000 THEN
+        EXIT ablock;  -- causes exit from the BEGIN block
+    END IF;
+    -- computations here will be skipped when stocks > 100000
+END;
+
+
+
+
+
+
+
+CONTINUE [ label ] [ WHEN boolean-expression ];
+
+
+
+
+
+LOOP
+    -- some computations
+    EXIT WHEN count > 100;
+    CONTINUE WHEN count < 50;
+    -- some computations for count IN [50 .. 100]
+END LOOP;
+
+
+
+
+[ <<label>> ]
+WHILE boolean-expression LOOP
+    statements
+END LOOP [ label ];
+
+
+
+WHILE amount_owed > 0 AND gift_certificate_balance > 0 LOOP
+    -- some computations here
+END LOOP;
+
+WHILE NOT done LOOP
+    -- some computations here
+END LOOP;
+
+
+
+
+
+[ <<label>> ]
+FOR name IN [ REVERSE ] expression .. expression [ BY expression ] LOOP
+    statements
+END LOOP [ label ];
+
+
+
+
+
+FOR i IN 1..10 LOOP
+    -- i will take on the values 1,2,3,4,5,6,7,8,9,10 within the loop
+END LOOP;
+
+FOR i IN REVERSE 10..1 LOOP
+    -- i will take on the values 10,9,8,7,6,5,4,3,2,1 within the loop
+END LOOP;
+
+FOR i IN REVERSE 10..1 BY 2 LOOP
+    -- i will take on the values 10,8,6,4,2 within the loop
+END LOOP;
+
+
+
+
+
+[ <<label>> ]
+FOR target IN query LOOP
+    statements
+END LOOP [ label ];
+
+
+
+
+CREATE FUNCTION refresh_mviews() RETURNS integer AS $$
+DECLARE
+    mviews RECORD;
+BEGIN
+    RAISE NOTICE 'Refreshing all materialized views...';
+
+    FOR mviews IN
+       SELECT n.nspname AS mv_schema,
+              c.relname AS mv_name,
+              pg_catalog.pg_get_userbyid(c.relowner) AS owner
+         FROM pg_catalog.pg_class c
+    LEFT JOIN pg_catalog.pg_namespace n ON (n.oid = c.relnamespace)
+        WHERE c.relkind = 'm'
+     ORDER BY 1
+    LOOP
+
+        -- Now "mviews" has one record with information about the materialized view
+
+        RAISE NOTICE 'Refreshing materialized view %.% (owner: %)...',
+                     quote_ident(mviews.mv_schema),
+                     quote_ident(mviews.mv_name),
+                     quote_ident(mviews.owner);
+        EXECUTE format('REFRESH MATERIALIZED VIEW %I.%I', mviews.mv_schema, mviews.mv_name);
+    END LOOP;
+
+    RAISE NOTICE 'Done refreshing materialized views.';
+    RETURN 1;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+[ <<label>> ]
+FOR target IN EXECUTE text_expression [ USING expression [, ... ] ] LOOP
+    statements
+END LOOP [ label ];
+
+
+
+
+[ <<label>> ]
+FOREACH target [ SLICE number ] IN ARRAY expression LOOP
+    statements
+END LOOP [ label ];
+
+
+
+
+CREATE FUNCTION sum(int[]) RETURNS int8 AS $$
+DECLARE
+  s int8 := 0;
+  x int;
+BEGIN
+  FOREACH x IN ARRAY $1
+  LOOP
+    s := s + x;
+  END LOOP;
+  RETURN s;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+CREATE FUNCTION scan_rows(int[]) RETURNS void AS $$
+DECLARE
+  x int[];
+BEGIN
+  FOREACH x SLICE 1 IN ARRAY $1
+  LOOP
+    RAISE NOTICE 'row = %', x;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT scan_rows(ARRAY[[1,2,3],[4,5,6],[7,8,9],[10,11,12]]);
+
+NOTICE:  row = {1,2,3}
+NOTICE:  row = {4,5,6}
+NOTICE:  row = {7,8,9}
+NOTICE:  row = {10,11,12}
+
+
+
+
+
+[ <<label>> ]
+[ DECLARE
+    declarations ]
+BEGIN
+    statements
+EXCEPTION
+    WHEN condition [ OR condition ... ] THEN
+        handler_statements
+    [ WHEN condition [ OR condition ... ] THEN
+          handler_statements
+      ... ]
+END;
+
+
+
+
+
+WHEN division_by_zero THEN ...
+WHEN SQLSTATE '22012' THEN ...
+
+
+
+
+INSERT INTO mytab(firstname, lastname) VALUES('Tom', 'Jones');
+BEGIN
+    UPDATE mytab SET firstname = 'Joe' WHERE lastname = 'Jones';
+    x := x + 1;
+    y := x / 0;
+EXCEPTION
+    WHEN division_by_zero THEN
+        RAISE NOTICE 'caught division_by_zero';
+        RETURN x;
+END;
+
+
+
+
+CREATE TABLE db (a INT PRIMARY KEY, b TEXT);
+
+CREATE FUNCTION merge_db(key INT, data TEXT) RETURNS VOID AS
+$$
+BEGIN
+    LOOP
+        -- first try to update the key
+        UPDATE db SET b = data WHERE a = key;
+        IF found THEN
+            RETURN;
+        END IF;
+        -- not there, so try to insert the key
+        -- if someone else inserts the same key concurrently,
+        -- we could get a unique-key failure
+        BEGIN
+            INSERT INTO db(a,b) VALUES (key, data);
+            RETURN;
+        EXCEPTION WHEN unique_violation THEN
+            -- Do nothing, and loop to try the UPDATE again.
+        END;
+    END LOOP;
+END;
+$$
+LANGUAGE plpgsql;
+
+SELECT merge_db(1, 'david');
+SELECT merge_db(1, 'dennis');
+
+
+
+
+
+GET STACKED DIAGNOSTICS variable { = | := } item [ , ... ];
+
+
+
+
+DECLARE
+  text_var1 text;
+  text_var2 text;
+  text_var3 text;
+BEGIN
+  -- some processing which might cause an exception
+  ...
+EXCEPTION WHEN OTHERS THEN
+  GET STACKED DIAGNOSTICS text_var1 = MESSAGE_TEXT,
+                          text_var2 = PG_EXCEPTION_DETAIL,
+                          text_var3 = PG_EXCEPTION_HINT;
+END;
+
+
+
+
+CREATE OR REPLACE FUNCTION outer_func() RETURNS integer AS $$
+BEGIN
+  RETURN inner_func();
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION inner_func() RETURNS integer AS $$
+DECLARE
+  stack text;
+BEGIN
+  GET DIAGNOSTICS stack = PG_CONTEXT;
+  RAISE NOTICE E'--- Call Stack ---\n%', stack;
+  RETURN 1;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT outer_func();
+
+NOTICE:  --- Call Stack ---
+PL/pgSQL function inner_func() line 5 at GET DIAGNOSTICS
+PL/pgSQL function outer_func() line 3 at RETURN
+CONTEXT:  PL/pgSQL function outer_func() line 3 at RETURN
+ outer_func
+ ------------
+           1
+(1 row)
+
+
+
+
+
+
